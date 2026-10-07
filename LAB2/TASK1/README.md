@@ -1,3 +1,6 @@
+## Image Processing Pipeline
+
+```text
 Original X-ray
       │
       └── Histogram Equalization
@@ -8,7 +11,7 @@ Original X-ray
               │
               └── Binary Threshold
                       ↓
-                  Dense Tissue Mask
+                Dense Tissue Mask
 
 
 Original X-ray
