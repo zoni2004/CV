@@ -5,21 +5,7 @@ This project processes paired CT and MRI medical images using image enhancement,
 ## Pipeline
 
 ```text
-                    CT Image
-                       │
-                       ▼
-              Histogram Equalization
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-          ▼            ▼            ▼
-      Color Map    Log Transform  Gamma Transform
-          │          (γ = 0.5)      (γ = 0.5)
-          ▼
-       CT Heatmap
-
-
-                    MRI Image
+              MRI Image & CT image
                        │
                        ▼
               Histogram Equalization
@@ -33,5 +19,8 @@ This project processes paired CT and MRI medical images using image enhancement,
 
           CT Heatmap + MRI Heatmap
                        │
-                       ▼
-              Weighted Fusion
+          ┌────────────┼────────────┐
+          │                         │
+          ▼                         ▼
+     Log Transform              Gamma Transform
+                                 (γ = 0.5)
