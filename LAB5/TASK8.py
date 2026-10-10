@@ -1,27 +1,50 @@
-import cv2
+#Task 8: Tuning Watershed for Difficult Object SeparationThe following implementation modifies the distance-transform threshold to control how touching objects are separated.   Pythonimport cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 1. Load a color image
-image = cv2.imread('wildlife.jpg')
-image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+# 1. Load image and preprocess
+image = cv2.imread('touching_coins.jpg')
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+_, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-# 2. Represent the image as a set of pixel feature vectors[cite: 25]
-pixel_values = image_rgb.reshape((-1, 3))
+# Noise removal and sure background
+kernel = np.ones((3, 3), np.uint8)
+opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+sure_bg = cv2.dilate(opening, kernel, iterations=3)
 
-# 3. Convert the pixel data to the appropriate numeric type[cite: 25]
-pixel_values = np.float32(pixel_values)
+# Distance transform
+dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
 
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+# Experiments with different distance-transform thresholds
+multipliers = [0.1, 0.4, 0.6, 0.9]
+results = []
 
-k_results = []
-# Run the experiment for K=2, 4 and 6[cite: 25]
-for K in [2, 4, 6]:
-    # 4. Perform K-Means clustering[cite: 25]
-    _, labels, centers = cv2.kmeans(pixel_values, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    centers = np.uint8(centers)
-    # 5. Reconstruct the segmented image[cite: 25]
-    segmented_image = centers[labels.flatten()].reshape(image_rgb.shape)
-    k_results.append((K, segmented_image))
+plt.figure(figsize=(16, 4))
 
-# (Plotting code omitted, saving to task9_output.png)
+for i, mult in enumerate(multipliers):
+    img_copy = image.copy()
+
+    # Apply multiplier to determine sure foreground
+    _, sure_fg = cv2.threshold(dist_transform, mult * dist_transform.max(), 255, 0)
+    sure_fg = np.uint8(sure_fg)
+
+    unknown = cv2.subtract(sure_bg, sure_fg)
+
+    # Label markers and count them
+    num_markers, markers = cv2.connectedComponents(sure_fg)
+    markers = markers + 1
+    markers[unknown == 255] = 0
+
+    cv2.watershed(img_copy, markers)
+    img_copy[markers == -1] = [255, 0, 0] # Red boundaries
+
+    # Plotting
+    plt.subplot(1, 4, i+1)
+    plt.imshow(cv2.cvtColor(img_copy, cv2.COLOR_BGR2RGB))
+    plt.title(f'Multiplier: {mult}')
+    plt.axis('off')
+
+    results.append((mult, num_markers - 1)) # -1 to ignore background marker
+
+plt.savefig('task8_watershed_tuning.png')
+plt.show()
